@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 public class Cell : MonoBehaviour
 {
-    LifeState _lifeState = LifeState.Dead;
+    [SerializeField]LifeState _lifeState = LifeState.Dead;
     int _groupCount = 0;
     public LifeState State
     {
@@ -24,7 +24,10 @@ public class Cell : MonoBehaviour
             StateChange();
         }
     }
-
+    private void OnValidate()
+    {
+        ColorChange();
+    }
     private void Start()
     {
         ColorChange();
@@ -49,7 +52,14 @@ public class Cell : MonoBehaviour
         {
             State = LifeState.Dead;
         }
-        else if(_groupCount <= 3)
+        else if(_groupCount == 2)
+        {
+            if (State == LifeState.Alive)
+            {
+                State = LifeState.Alive;
+            }
+        }
+        else if(_groupCount == 3)
         {
             State = LifeState.Alive;
         }

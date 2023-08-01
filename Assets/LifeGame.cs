@@ -1,14 +1,16 @@
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using Unity.PlasticSCM.Editor.WebApi;
+using UnityEngine.UI;
 
 public class LifeGame : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] int _row;
     [SerializeField] int _column;
     [SerializeField] GameObject _cellPrefab;
-    [SerializeField, Range(0, 10)] float _interval = 5;
+    [SerializeField, Range(0, 10)] float _interval;
+    [SerializeField] Slider _slider;
+    Test<int> test = new Test<int>(10, 10);
     Position[] _direction = {
         new Position( 1, 0 ),
         new Position( -1, 0 ),
@@ -20,6 +22,7 @@ public class LifeGame : MonoBehaviour, IPointerClickHandler
         new Position( -1, 1 ),
     };
     Cell[,] _cells;
+    int[,] _changeCount;
     bool _isStart;
     float _timer;
 
@@ -29,13 +32,18 @@ public class LifeGame : MonoBehaviour, IPointerClickHandler
 
     void Start()
     {
+        var a = test;
+        _slider.maxValue = 10;
         _cells = new Cell[_row, _column];
+        _changeCount = new int[_row, _column];
         GetComponent<GridLayoutGroup>().constraintCount = _column;
         for(int r = 0; r < _row; r++)
         {
             for(int c = 0; c < _column; c++)
             {
                 var cell = Instantiate(_cellPrefab, transform);
+                cell.transform.GetChild(0).GetComponent<Text>().text = r.ToString();
+                cell.transform.GetChild(1).GetComponent<Text>().text = c.ToString();
                 cell.name = $"{r} {c}";
                 _cells[r, c] = cell.GetComponent<Cell>();
             }
@@ -47,14 +55,20 @@ public class LifeGame : MonoBehaviour, IPointerClickHandler
         _timer += Time.deltaTime;
         if (_isStart)
         {
-            if (_timer > _interval)
+            if (_timer > _interval - _slider.value)
             {
                 for (int r = 0; r < _row; r++)
                 {
                     for (int c = 0; c < _column; c++)
                     {
-                        _cells[r, c].GroupCount = 0;
                         ChangeState(r, c);
+                    }
+                } 
+                for(int r = 0; r < _row; r++)
+                {
+                    for(int c = 0; c < _column; c++)
+                    {
+                        _cells[r, c].GroupCount = _changeCount[r, c];
                     }
                 }
                 _timer = 0;
@@ -65,22 +79,28 @@ public class LifeGame : MonoBehaviour, IPointerClickHandler
     {
         _isStart = true;
     }
+
+    public void StopFlag()
+    {
+        _isStart = false;
+    }
+
     public void ChangeState(int r, int c)
     {
+        int aliveCount = 0;
         foreach (var dir in _direction)
         {
-            CheckCell(r + dir.x, c + dir.y, r, c);
-        }
-    }
-    void CheckCell(int r, int c, int baseR, int baseC)
-    {
-        if (r >= 0 && r < _row && c >= 0 && c < _column)
-        {
-            if (_cells[r, c].State == Cell.LifeState.Alive)
+            int nextR = r + dir.x;
+            int nextC = c + dir.y;
+            if (nextR >= 0 && nextR < _row && nextC >= 0 && nextC < _column)
             {
-                _cells[baseR, baseC].GroupCount++;
+                if (_cells[nextR, nextC].State == Cell.LifeState.Alive)
+                {
+                    aliveCount++;
+                }
             }
         }
+        _changeCount[r, c] = aliveCount;
     }
 
     public void OnPointerClick(PointerEventData eventData)
